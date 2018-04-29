@@ -12,6 +12,7 @@ import (
 	"reflect"
 
 	"github.com/gorilla/mux"
+	"GoLib/logger"
 )
 
 type GenericHandle func(http.ResponseWriter, *http.Request) GenericResponse
@@ -107,11 +108,12 @@ func RouteHandler(router *mux.Router, prefix string) RegisterRoute {
 }
 
 func LoggerHandler(h http.Handler) http.Handler {
+	l := logger.New("API")
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		logger := makeLogger(w)
+		hijackedLogger := makeLogger(w)
 		start := time.Now()
 
-		h.ServeHTTP(logger, r)
+		h.ServeHTTP(hijackedLogger, r)
 
 		end := time.Now()
 		latency := end.Sub(start)
@@ -119,66 +121,54 @@ func LoggerHandler(h http.Handler) http.Handler {
 		clientIP := r.RemoteAddr
 		method := r.Method
 
-		statusCode := logger.Status()
+		statusCode := hijackedLogger.Status()
 
 		statusColor := colorForStatus(statusCode)
 		methodColor := colorForMethod(method)
 
 		path := r.URL.Path
 
-		fmt.Printf("[API] %v |%s %3d %s| %12v | %21s |%s %-7s %s %s\n",
-			end.Format("2006/01/02 - 15:04:05"),
-			statusColor, statusCode, reset,
+		l.Log("%s %3d %s| %12v | %21s |%s %-7s %s %s",
+			statusColor, statusCode, logger.Reset,
 			latency,
 			clientIP,
-			methodColor, method, reset,
+			methodColor, method, logger.Reset,
 			path,
 		)
 	})
 }
 
-var (
-	green   = string([]byte{27, 91, 51, 48, 59, 52, 50, 109})
-	white   = string([]byte{27, 91, 51, 48, 59, 52, 55, 109})
-	yellow  = string([]byte{27, 91, 51, 48, 59, 52, 51, 109})
-	red     = string([]byte{27, 91, 57, 55, 59, 52, 49, 109})
-	blue    = string([]byte{27, 91, 57, 55, 59, 52, 52, 109})
-	magenta = string([]byte{27, 91, 57, 55, 59, 52, 53, 109})
-	cyan    = string([]byte{27, 91, 57, 55, 59, 52, 54, 109})
-	reset   = string([]byte{27, 91, 48, 109})
-)
-
 func colorForStatus(code int) string {
 	switch {
 	case code >= 200 && code < 300:
-		return green
+		return logger.Green
 	case code >= 300 && code < 400:
-		return magenta
+		return logger.Magenta
 	case code >= 400 && code < 500:
-		return yellow
+		return logger.Yellow
 	default:
-		return red
+		return logger.Red
 	}
 }
 
 func colorForMethod(method string) string {
 	switch method {
 	case "GET":
-		return blue
+		return logger.Blue
 	case "POST":
-		return cyan
+		return logger.Cyan
 	case "PUT":
-		return yellow
+		return logger.Yellow
 	case "DELETE":
-		return red
+		return logger.Red
 	case "PATCH":
-		return green
+		return logger.Green
 	case "HEAD":
-		return magenta
+		return logger.Magenta
 	case "OPTIONS":
-		return white
+		return logger.White
 	default:
-		return reset
+		return logger.Reset
 	}
 }
 
