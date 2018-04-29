@@ -37,7 +37,7 @@ func (logger *Logger) Log(format string, data ...interface{}) {
 
 	fmt.Printf("[%s] %v |%s\n",
 		logger.Prefix,
-		time.Now().Format("2006/12/30 - 23:59:59"),
+		time.Now().Format("2006/12/30 - 15:04:05"),
 		message,
 	)
 }
