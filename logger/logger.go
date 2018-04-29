@@ -27,9 +27,17 @@ func New(prefix string) *Logger {
 }
 
 func (logger *Logger) Log(format string, data ...interface{}) {
+	message := format
+
+	if data != nil {
+		if len(data) > 0 {
+			message = fmt.Sprintf(format, data...)
+		}
+	}
+
 	fmt.Printf("[%s] %v |%s\n",
 		logger.Prefix,
 		time.Now().Format("2006/12/30 - 23:59:59"),
-		fmt.Sprintf(format, data),
+		message,
 	)
 }
