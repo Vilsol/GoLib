@@ -12,7 +12,7 @@ import (
 	"reflect"
 
 	"github.com/gorilla/mux"
-	"GoLib/logger"
+	"github.com/Vilsol/GoLib/logger"
 )
 
 type GenericHandle func(http.ResponseWriter, *http.Request) GenericResponse
