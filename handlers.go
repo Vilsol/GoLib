@@ -1,18 +1,21 @@
 package GoLib
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
-
 	"net/http"
+	"os"
+	"regexp"
+	"runtime"
 
 	"fmt"
 	"time"
 
 	"reflect"
 
-	"github.com/gorilla/mux"
 	"github.com/Vilsol/GoLib/logger"
+	"github.com/gorilla/mux"
 )
 
 type GenericHandle func(http.ResponseWriter, *http.Request) GenericResponse
@@ -57,6 +60,8 @@ func ProcessResponse(handle GenericHandle) http.Handler {
 	})
 }
 
+var panicRegex = regexp.MustCompile("(?m)^panic\\(.+?\\)")
+
 type DataHandle func(*http.Request) (interface{}, *ErrorResponse)
 
 func DataHandler(handle DataHandle) GenericHandle {
@@ -83,6 +88,17 @@ func DataHandler(handle DataHandle) GenericHandle {
 				default:
 					err = &ErrorInternalError
 					break
+				}
+
+				fmt.Fprintln(os.Stderr, err.Message)
+
+				buf := make([]byte, 1<<10)
+				runtime.Stack(buf, false)
+				panicIndex := panicRegex.FindIndex(buf)
+				if len(panicIndex) == 0 {
+					fmt.Fprintln(os.Stderr, string(buf))
+				} else {
+					fmt.Fprintln(os.Stderr, string(buf)[0:bytes.IndexByte(buf, '\n') + 1] + string(buf)[panicIndex[0]:])
 				}
 			},
 		}.Do()
